@@ -1,0 +1,111 @@
+from fastapi import APIRouter, Depends
+from aiogram import Router, F, types
+from aiogram.filters import CommandStart
+from aiogram.fsm.context import FSMContext
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Message, ReplyKeyboardRemove
+from bot.handlers.validator import check_id_duplicate, check_code_duplicate
+from bot.handlers.keyboard_button import (
+    WALLET,
+    DEPOSIT,
+    RATING,
+    REFERRAL_PROGRAM,
+    CREATE, GET, SEND, EXCHANGE, STARTMENU
+)
+from bot.handlers.states import SixCode
+from bot.arbitrum.arbitrum import create_wallet
+
+router = Router()
+
+
+@router.message(F.text == STARTMENU)
+@router.message(CommandStart())
+async def command_start(
+    message: types.Message,
+) -> None:
+    await message.answer(
+        'Hi! what do you want?',
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [
+                    KeyboardButton(text=WALLET),
+                    KeyboardButton(text=DEPOSIT),
+                    KeyboardButton(text=RATING),
+                    KeyboardButton(text=REFERRAL_PROGRAM),
+                ]
+            ],
+        ),
+    )
+
+
+@router.message(F.text == WALLET)
+async def command_start(
+    message: types.Message,
+) -> None:
+    if (
+        await check_id_duplicate(message.from_user.id) == False
+    ):
+        await message.answer(
+            f'You have a wallet, choise optoin',
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[
+                    [
+                        KeyboardButton(text=STARTMENU),
+                        KeyboardButton(text=GET),
+                        KeyboardButton(text=SEND),
+                        KeyboardButton(text=EXCHANGE),
+                    ]
+                ],
+            ),
+        )
+    else:
+        await message.answer(
+            'Hi! what do you want?',
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[
+                    [
+                        KeyboardButton(text=CREATE),
+                        KeyboardButton(text=GET),
+                        KeyboardButton(text=SEND),
+                        KeyboardButton(text=EXCHANGE),
+                    ]
+                ],
+            ),
+        )
+
+
+@router.message(F.text == CREATE)
+async def wallet_start_window(message: Message, state: FSMContext) -> None:
+    await state.set_state(SixCode.six_code)
+    await message.answer(
+        "Enter six digit code",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+
+@router.message(SixCode.six_code)
+async def state_wallet(message: Message, state: FSMContext) -> None:
+    if (
+        (
+            check_code_duplicate(message.text) == False
+        ) or (
+            message.text.isdigit() == False
+        )
+        or (
+            len(message.text) > 6
+        )
+    ):
+        await message.answer(
+            f"U send not valid code or code is use",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        await wallet_start_window(message)
+    address, seed_phrase = await create_wallet(
+        user_id=message.from_user.id,
+        six_code=message.text
+    )
+    await message.answer(
+        f"Wallet created!Address: \n{address} \nSeed Phrase: {seed_phrase}",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    await command_start(message)
