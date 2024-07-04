@@ -3,6 +3,8 @@ from aiogram import Router, F, types
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, Message, ReplyKeyboardRemove
+
+from bot.core.crud import get_addres_by_id
 from bot.handlers.validator import check_id_duplicate, check_code_duplicate
 from bot.handlers.keyboard_button import (
     WALLET,
@@ -109,3 +111,24 @@ async def state_wallet(message: Message, state: FSMContext) -> None:
     )
 
     await command_start(message)
+
+
+@router.message(F.text == GET)
+async def wallet_start_window(message: Message) -> None:
+    result = await get_addres_by_id(message.from_user.id)
+    if result is not None:
+        await message.answer(
+            f'Your crypto wallet address `{result}`',
+            parse_mode='MarkdownV2'
+        )
+    else:
+        await message.answer(
+            "You don't have a wallet, let's create one?",
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[
+                    [
+                        KeyboardButton(text=CREATE),
+                    ]
+                ],
+            ),
+        )

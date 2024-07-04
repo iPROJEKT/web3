@@ -52,3 +52,15 @@ async def get_user(
             )
         )
     return result.scalars().first()
+
+
+async def get_addres_by_id(
+    user_id: int,
+):
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(User.address).where(
+                User.user_id == user_id
+            )
+        )
+    return result.scalars().first()
