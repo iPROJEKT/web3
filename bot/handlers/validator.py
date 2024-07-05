@@ -23,8 +23,8 @@ async def check_code_duplicate(
 ) -> bool:
     charity_project_id = await (
         get_six_code(
-            six_code=six_code,
+            six_codes=six_code,
         )
     )
-    if charity_project_id is not None:
+    if charity_project_id is None:
         return False

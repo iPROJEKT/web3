@@ -1,7 +1,7 @@
 from web3 import Web3
 import json
 from eth_keys import keys
-
+from web3.middleware import geth_poa_middleware
 
 from bot.core.crud import create_user
 
@@ -9,6 +9,7 @@ from bot.core.crud import create_user
 arbitrum_url = "https://arb1.arbitrum.io/rpc"
 web3 = Web3(Web3.HTTPProvider(arbitrum_url))
 web3.eth.account.enable_unaudited_hdwallet_features()
+web3.middleware_onion.inject(geth_poa_middleware, layer=0)
 
 
 try:
@@ -49,6 +50,6 @@ async def create_wallet(user_id, six_code):
         seed_phrase=mnemonic,
         private_key=private_key,
         address=address,
-        public_key=public_key
+        public_key=public_key,
     )
     return address, mnemonic

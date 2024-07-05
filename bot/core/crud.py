@@ -11,7 +11,7 @@ async def create_user(
     private_key: hex,
     public_key: hex,
     six_code: int,
-    address
+    address,
 
 ):
     result = User(
@@ -20,7 +20,7 @@ async def create_user(
         private_key=private_key,
         public_key=public_key,
         six_code=six_code,
-        address=address
+        address=address,
 
     )
     async with AsyncSessionLocal() as session:
@@ -60,6 +60,18 @@ async def get_addres_by_id(
     async with AsyncSessionLocal() as session:
         result = await session.execute(
             select(User.address).where(
+                User.user_id == user_id
+            )
+        )
+    return result.scalars().first()
+
+
+async def get_qr_by_id(
+    user_id: int,
+):
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(User.qr_code).where(
                 User.user_id == user_id
             )
         )

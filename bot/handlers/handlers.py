@@ -1,4 +1,3 @@
-from fastapi import APIRouter, Depends
 from aiogram import Router, F, types
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
@@ -13,7 +12,7 @@ from bot.handlers.keyboard_button import (
     REFERRAL_PROGRAM,
     CREATE, GET, SEND, EXCHANGE, STARTMENU
 )
-from bot.handlers.states import SixCode
+from bot.handlers.states import SixCode, Transaction
 from bot.arbitrum.arbitrum import create_wallet
 
 router = Router()
@@ -88,13 +87,11 @@ async def wallet_start_window(message: Message, state: FSMContext) -> None:
 async def state_wallet(message: Message, state: FSMContext) -> None:
     if (
         (
-            check_code_duplicate(message.text) == False
+            await check_code_duplicate(message.text) == True
         ) or (
             message.text.isdigit() == False
         )
-        or (
-            len(message.text) > 6
-        )
+        or (len(message.text) > 6)
     ):
         await message.answer(
             f"U send not valid code or code is use",
@@ -107,14 +104,19 @@ async def state_wallet(message: Message, state: FSMContext) -> None:
     )
     await message.answer(
         f"Wallet created!Address: \n{address} \nSeed Phrase: {seed_phrase}",
-        reply_markup=ReplyKeyboardRemove(),
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [
+                    KeyboardButton(text=STARTMENU),
+                ]
+            ],
+        ),
     )
 
-    await command_start(message)
 
 
 @router.message(F.text == GET)
-async def wallet_start_window(message: Message) -> None:
+async def wallet_get(message: Message) -> None:
     result = await get_addres_by_id(message.from_user.id)
     if result is not None:
         await message.answer(
@@ -132,3 +134,16 @@ async def wallet_start_window(message: Message) -> None:
                 ],
             ),
         )
+
+@router.message(F.text == SEND)
+async def wallet_send(message: Message, state: FSMContext) -> None:
+    await state.set_state(Transaction.address)
+    await message.answer(
+        "Enter address",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+
+@router.message(Transaction.address)
+async def wallet_get_amount(message: Message, state: FSMContext) -> None:
+    await state.set_state(Transaction.amount)
