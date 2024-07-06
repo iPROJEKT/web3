@@ -2,7 +2,7 @@ from web3 import Web3
 import json
 from eth_keys import keys
 from web3.middleware import geth_poa_middleware
-
+from web3.exceptions import InvalidAddress
 from bot.core.crud import create_user
 
 
@@ -53,3 +53,25 @@ async def create_wallet(user_id, six_code):
         public_key=public_key,
     )
     return address, mnemonic
+
+
+async def arb_get_balanse(address, currency):
+    try:
+        balance = web3.eth.get_balance(address)
+        return web3.from_wei(balance, currency)
+    except InvalidAddress:
+        return None
+
+
+async def send_currency(sender_address, recipient_address, private_key, amount):
+    nonce = web3.eth.get_transaction_count(sender_address)
+    tx = {
+        'nonce': nonce,
+        'to': recipient_address,
+        'value': web3.to_wei(amount, 'ether'),
+        'gas': 21000,
+        'gasPrice': web3.to_wei('50', 'gwei')
+    }
+    signed_tx = web3.eth.account.signTransaction(tx, private_key)
+    tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+    return f"Transaction sent! TX Hash: {tx_hash.hex()}"

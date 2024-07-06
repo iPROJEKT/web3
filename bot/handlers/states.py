@@ -7,6 +7,6 @@ class SixCode(StatesGroup):
 
 class Transaction(StatesGroup):
     address = State()
-    amount = State()
     currency = State()
+    amount = State()
     six_code = State()

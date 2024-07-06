@@ -38,7 +38,6 @@ async def get_six_code(
                 User.six_code == six_codes
             )
         )
-    print(result.scalars().all())
     return result.scalars().all()
 
 
@@ -66,12 +65,24 @@ async def get_addres_by_id(
     return result.scalars().first()
 
 
-async def get_qr_by_id(
+async def get_six_code_by_id(
     user_id: int,
 ):
     async with AsyncSessionLocal() as session:
         result = await session.execute(
-            select(User.qr_code).where(
+            select(User.six_code).where(
+                User.user_id == user_id
+            )
+        )
+    return result.scalars().first()
+
+
+async def get_private_key(
+    user_id: int,
+):
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(User.private_key).where(
                 User.user_id == user_id
             )
         )
