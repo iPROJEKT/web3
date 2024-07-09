@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, LargeBinary
+from sqlalchemy import Column, Integer, String
 
 from bot.core.db import Base
 
@@ -10,4 +10,10 @@ class User(Base):
     public_key = Column(String, unique=True, nullable=False)
     six_code = Column(Integer, unique=True, nullable=False)
     address = Column(String, unique=True, nullable=False)
-    qr_code = Column(LargeBinary, nullable=True)
+
+
+class Transaction(Base):
+    from_user = Column(Integer, unique=True, nullable=False)
+    to_user = Column(Integer, unique=True, nullable=False)
+    amount = Column(Integer, unique=True, nullable=False)
+    tx_hash_hex = Column(String, unique=True, nullable=True)

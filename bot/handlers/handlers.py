@@ -113,6 +113,7 @@ async def state_wallet(message: Message, state: FSMContext) -> None:
             ],
         ),
     )
+    await state.clear()
 
 
 @router.message(F.text == GET)
@@ -147,7 +148,7 @@ async def wallet_send(message: Message, state: FSMContext) -> None:
 
 @router.message(Transaction.address)
 async def wallet_get_currency(message: Message, state: FSMContext) -> None:
-    address = message.text  # Предположим, что адрес передается в тексте сообщения
+    address = message.text
     if await arb_get_balanse(address, ETHER) is None:
         await message.answer(
             "The wallet address was entered incorrectly",
@@ -157,7 +158,7 @@ async def wallet_get_currency(message: Message, state: FSMContext) -> None:
                         KeyboardButton(text=STARTMENU),
                     ]
                 ],
-                resize_keyboard=True  # Добавьте resize_keyboard=True, чтобы клавиатура выглядела корректно
+                resize_keyboard=True
             ),
         )
     else:
@@ -229,13 +230,14 @@ async def wallet_get_six_code(message: Message, state: FSMContext) -> None:
 async def wallet_check_six_code(message: Message, state: FSMContext) -> None:
     data = await state.get_data()
     if await get_six_code_by_id(message.from_user.id) == int(message.text):
+        tx_hex = await send_currency(
+            sender_address=get_addres_by_id(message.from_user.id),
+            recipient_address=data.get('address'),
+            private_key=await get_private_key(message.from_user.id),
+            amount=data.get('amount')
+        ),
         await message.answer(
-            await send_currency(
-                sender_address=get_addres_by_id(message.from_user.id),
-                recipient_address=data.get('address'),
-                private_key=await get_private_key(message.from_user.id),
-                amount=data.get('amount')
-            ),
+            f'Trans {tx_hex}',
             reply_markup=ReplyKeyboardMarkup(
                 keyboard=[
                     [

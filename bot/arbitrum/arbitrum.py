@@ -1,9 +1,11 @@
+import logging
+
 from web3 import Web3
 import json
 from eth_keys import keys
 from web3.middleware import geth_poa_middleware
 from web3.exceptions import InvalidAddress
-from bot.core.crud import create_user
+from bot.core.crud import create_user, create_trans
 
 
 arbitrum_url = "https://arb1.arbitrum.io/rpc"
@@ -64,14 +66,24 @@ async def arb_get_balanse(address, currency):
 
 
 async def send_currency(sender_address, recipient_address, private_key, amount):
-    nonce = web3.eth.get_transaction_count(sender_address)
-    tx = {
-        'nonce': nonce,
-        'to': recipient_address,
-        'value': web3.to_wei(amount, 'ether'),
-        'gas': 21000,
-        'gasPrice': web3.to_wei('50', 'gwei')
-    }
-    signed_tx = web3.eth.account.signTransaction(tx, private_key)
-    tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
-    return f"Transaction sent! TX Hash: {tx_hash.hex()}"
+    try:
+        nonce = web3.eth.get_transaction_count(sender_address)
+        tx = {
+            'nonce': nonce,
+            'to': recipient_address,
+            'value': web3.to_wei(amount, 'ether'),
+            'gas': 0,
+            'gasPrice': web3.to_wei('0', 'gwei')
+        }
+        signed_tx = web3.eth.account.signTransaction(tx, private_key)
+        tx_hash = web3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        await create_trans(
+            from_user=sender_address,
+            to_user=recipient_address,
+            amount=amount,
+            tx_hash_hex=tx_hash.hex()
+        )
+        return tx_hash.hex()
+    except Exception as e:
+        logging.error(f"Error in send_currency: {e}")
+        raise e
