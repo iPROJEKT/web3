@@ -1,23 +1,22 @@
-from web3 import Web3
-from eth_account import Account
-from web3.exceptions import InvalidAddress
-# Подключение к Arbitrum RPC
-arbitrum_rpc_url = 'https://arb1.arbitrum.io/rpc'
-w3 = Web3(Web3.HTTPProvider(arbitrum_rpc_url))
+import requests
+import json
 
-assert w3.is_connected()
+url = "https://api-sandbox.nowpayments.io/v1/payment"
 
+payload = json.dumps({
+  "price_amount": 3999.5,
+  "price_currency": "usd",
+  "pay_amount": 0.8102725,
+  "pay_currency": "btc",
+  "ipn_callback_url": "https://nowpayments.io",
+  "order_id": "RGDBP-21314",
+  "order_description": "Apple Macbook Pro 2019 x 1"
+})
+headers = {
+  'x-api-key': 'NP870F6-DD84D2Y-PKX9TDC-YD5XCA2',
+  'Content-Type': 'application/json'
+}
 
-def get_balance(address):
-    try:
-        balance = w3.eth.get_balance(address)
-        return w3.from_wei(balance, 'ether')
-    except InvalidAddress:
-        return None
+response = requests.request("POST", url, headers=headers, data=payload)
 
-
-def get_address(address):
-    return w3.is_address(address)
-
-
-print(get_balance('0xfea3192FC12C9bd72415B62E12eC7F82'))
+print(response.text)

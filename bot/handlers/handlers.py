@@ -257,3 +257,7 @@ async def wallet_check_six_code(message: Message, state: FSMContext) -> None:
                 ],
             ),
         )
+
+
+@router.message(F.text == DEPOSIT)
+async def depozit(message: Message):
