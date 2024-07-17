@@ -10,3 +10,9 @@ class Transaction(StatesGroup):
     currency = State()
     amount = State()
     six_code = State()
+
+
+class DAOTRANSITION(StatesGroup):
+    amount = State()
+    wallet_adress = State()
+    six_code = State()

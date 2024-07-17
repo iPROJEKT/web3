@@ -11,10 +11,14 @@ from bot.handlers.keyboard_button import (
     RATING,
     REFERRAL_PROGRAM,
     CREATE, GET, SEND, EXCHANGE, STARTMENU,
-    KWEI, MWEI, GWEI, MICROETHER, ETHER
+    KWEI, MWEI, GWEI, MICROETHER, ETHER,
+    DAO_IN_USDC, REQUEST_USDC,
+    DAO_IN_W3, REQUEST_W3,
+    DAO_FROM_W3_TO_USDT, REQUEST_W3_USDT
 )
-from bot.handlers.states import SixCode, Transaction
+from bot.handlers.states import SixCode, Transaction, DAOTRANSITION
 from bot.arbitrum.arbitrum import create_wallet, arb_get_balanse, send_currency
+from bot.nowpayments.api import create_pay
 
 router = Router()
 
@@ -175,7 +179,7 @@ async def wallet_get_currency(message: Message, state: FSMContext) -> None:
                         KeyboardButton(text=KWEI),
                     ]
                 ],
-                resize_keyboard=True  # Добавьте resize_keyboard=True, чтобы клавиатура выглядела корректно
+                resize_keyboard=True
             ),
         )
 
@@ -261,3 +265,140 @@ async def wallet_check_six_code(message: Message, state: FSMContext) -> None:
 
 @router.message(F.text == DEPOSIT)
 async def depozit(message: Message):
+    await message.answer(
+        f'Choise optoin',
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [
+                    KeyboardButton(text=DAO_IN_USDC),
+                    KeyboardButton(text=REQUEST_USDC),
+                    KeyboardButton(text=REQUEST_W3),
+                    KeyboardButton(text=DAO_IN_W3),
+                    KeyboardButton(text=DAO_FROM_W3_TO_USDT),
+                    KeyboardButton(text=REQUEST_W3_USDT),
+                    KeyboardButton(text=STARTMENU),
+                ]
+            ],
+        ),
+    )
+
+
+@router.message(F.text == DAO_IN_USDC)
+async def dao_in_usdc(message: Message, state: FSMContext):
+    await message.answer(
+        f'In the form of the $USDC amount you want to make a deposit?',
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [
+                    KeyboardButton(text=STARTMENU),
+                ]
+            ],
+        ),
+    )
+    await state.set_state(DAOTRANSITION.amount)
+
+
+@router.message(DAOTRANSITION.amount)
+async def dao_in_usdcf(message: Message, state: FSMContext):
+    if int(message.text) <= 0:
+        await message.answer(
+            f'Number less than zero {message.text}',
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[
+                    [
+                        KeyboardButton(text=STARTMENU),
+                    ]
+                ],
+            ),
+        )
+
+    elif (message.text).isdigit() == False:
+        await message.answer(
+            "Number cannot contain letters",
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[
+                    [
+                        KeyboardButton(text=STARTMENU),
+                    ]
+                ],
+            ),
+        )
+    else:
+        amount = int(message.text)
+        await state.update_data(amount=amount)
+        nigga = create_pay(int(message.text))
+        url_for_pay = nigga.get('invoice_url')
+        await message.answer(
+            f'{url_for_pay} - copy ETH adress and send me {message.text}',
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[
+                    [
+                        KeyboardButton(text=STARTMENU),
+                    ]
+                ],
+            ),
+        )
+        await state.set_state(DAOTRANSITION.wallet_adress)
+
+
+@router.message(DAOTRANSITION.wallet_adress)
+async def put_adress(message: Message, state: FSMContext):
+    data = await state.get_data()
+    m = data.get('amount')
+    if await arb_get_balanse(message.text, 'gwei') is None:
+        await message.answer(
+            f'Copy ETH address and send again ',
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[
+                    [
+                        KeyboardButton(text=STARTMENU),
+                    ]
+                ],
+            ),
+        )
+    await state.update_data(wallet_adress=message.text)
+    await message.answer(
+        f'Six code {m}',
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [
+                    KeyboardButton(text=STARTMENU),
+                ]
+            ],
+        ),
+    )
+    await state.set_state(DAOTRANSITION.six_code)
+
+
+@router.message(DAOTRANSITION.six_code)
+async def dao_six_code(message: Message, state: FSMContext):
+    data = await state.get_data()
+    if await get_six_code_by_id(message.from_user.id) == int(message.text):
+        tx_hex = await send_currency(
+            sender_address=await get_addres_by_id(message.from_user.id),
+            recipient_address=str(data.get('wallet_adress')),
+            private_key=await get_private_key(message.from_user.id),
+            amount=data.get('amount'),
+        )
+        await message.answer(
+            f'Trans {tx_hex}. Wait 20min for confirm transaction',
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[
+                    [
+                        KeyboardButton(text=STARTMENU),
+                    ]
+                ],
+            ),
+        )
+    else:
+        await message.answer(
+            "Invalid 6-digit code, try again",
+            reply_markup=ReplyKeyboardMarkup(
+                keyboard=[
+                    [
+                        KeyboardButton(text=STARTMENU),
+                    ]
+                ],
+            ),
+        )
+        await dao_six_code()

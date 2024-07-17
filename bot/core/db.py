@@ -13,7 +13,7 @@ class PreBase:
         return cls.__name__.lower()
 
     # Во все таблицы будет добавлено поле ID.
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
 
 
 # В качестве основы для базового класса укажем класс PreBase.
