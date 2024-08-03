@@ -37,8 +37,19 @@
 
 Следуйте этим шагам, чтобы настроить проект на вашем локальном компьютере.
 
-1. **Клонируйте репозиторий**
+1. **Запуск**
 
    ```bash
-   git clone https://github.com/yourusername/crypto-wallet.git
-   cd crypto-wallet
+   git clone git@github.com:iPROJEKT/web3.git
+   cd web3
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   alembic revision --autogenerate -m "Описание миграции"
+   alembic upgrade head
+
+```env
+   DATABASE_URL=postgresql://username:password@localhost:5432/crypto_wallet
+   TELEGRAM_API_TOKEN=your_telegram_api_token
+   WEB3_PROVIDER_URI=https://mainnet.infura.io/v3/your_infura_project_id
+   SECRET_KEY=your_secret_key
